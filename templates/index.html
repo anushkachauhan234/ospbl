@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Virtual Memory Manager - Input</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 30px; }
+  h1 { color: #2c3e50; }
+  label { display: block; margin-top: 15px; font-weight: bold; }
+  input[type=number], textarea, select { width: 300px; padding: 5px; font-size: 16px; margin-top: 5px; }
+  textarea { height: 80px; }
+  button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #2980b9; color: white; border: none; border-radius: 4px; }
+</style>
+<script>
+function updateReferenceInputs() {
+  const num = document.getElementById('num_processes').value;
+  const container = document.getElementById('referenceStrings');
+  container.innerHTML = '';
+  for(let i=1; i<=num; i++){
+    const label = document.createElement('label');
+    label.innerText = `Reference String for Process p${i} (comma or space separated):`;
+    const textarea = document.createElement('textarea');
+    textarea.name = `ref_str_p${i}`;
+    textarea.required = true;
+    textarea.placeholder = 'e.g. 7, 0, 1, 2, 0, 3, 0, 4';
+    container.appendChild(label);
+    container.appendChild(textarea);
+  }
+}
+window.onload = () => {
+  updateReferenceInputs();
+}
+</script>
+</head>
+<body>
+<h1>VIRTUAL MEMORY MANAGER</h1>
+<form method="post">
+  <label for="num_processes">Number of Processes:</label>
+  <input type="number" id="num_processes" name="num_processes" min="1" max="10" value="2" onchange="updateReferenceInputs()" required>
+
+  <label for="num_frames">Number of Frames (per process):</label>
+  <input type="number" id="num_frames" name="num_frames" min="1" max="10" value="3" required>
+
+  <div id="referenceStrings">
+    <!-- JS inserts textareas here -->
+  </div>
+
+  <label for="algorithm">Select Algorithm:</label>
+  <select name="algorithm" id="algorithm" required>
+    <option value="FIFO">FIFO</option>
+    <option value="LRU">LRU</option>
+    <option value="OPTIMAL">OPTIMAL</option>
+  </select>
+
+  <button type="submit">Run Simulation</button>
+</form>
+</body>
+</html>
