@@ -1,48 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Virtual Memory Manager - Results</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  h1, h2 { color: #34495e; }
-  table { border-collapse: collapse; width: 90%; margin-bottom: 30px; }
-  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-  th { background-color: #3498db; color: white; }
-  .hit { background-color: #2ecc71; color: white; }
-  .fault { background-color: #e74c3c; color: white; }
-  .btn {
-    padding: 6px 12px; background-color: #2980b9; color: white; border: none;
-    border-radius: 4px; cursor: pointer; margin: 5px;
-  }
-  #summary {
-    background-color: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 30px;
-  }
-  #panels {
-    display: flex; justify-content: space-between; gap: 15px;
-  }
-  #leftPanel, #rightPanel {
-    flex: 1; max-width: 48%;
-  }
-  #bottomPanel {
-    margin-top: 30px;
-    padding: 15px; background-color: #bdc3c7; border-radius: 8px;
-  }
-  /* Popup styles */
-  .popup {
-    display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
-    background: white; border: 2px solid #2980b9; padding: 20px; z-index: 1000;
-    max-height: 80vh; overflow-y: auto; width: 80vw; box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  }
-  .popup.active { display: block; }
-  .popup-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
-  }
-  .popup-close {
-    cursor: pointer; font-weight: bold; font-size: 18px; color: #e74c3c;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Virtual Memory Manager - Results</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='result_style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
 </head>
 <body>
 
@@ -50,54 +13,54 @@
 
 <div id="panels">
 
-<div id="leftPanel">
-  <h2>Process Memory State (Stepwise)</h2>
-  {% for i in range(num_processes) %}
-    <h3>Process p{{ i+1 }} (Ref String: {{ reference_strings[i] }})</h3>
+  <div id="leftPanel">
+    <h2>Process Memory State (Stepwise)</h2>
+    {% for i in range(num_processes) %}
+      <h3>Process p{{ i+1 }} (Ref String: {{ reference_strings[i] }})</h3>
+      <table>
+        <tr>
+          <th>Step</th>
+          {% for step_num in range(selected_results[i]['memory_state']|length) %}
+            <th>{{ step_num + 1 }}</th>
+          {% endfor %}
+        </tr>
+        {% for frame_num in range(num_frames) %}
+        <tr>
+          <td>Frame {{ frame_num+1 }}</td>
+          {% for mem in selected_results[i]['memory_state'] %}
+            <td>{{ mem[frame_num] if mem|length > frame_num else '-' }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        <tr>
+          <td>Result</td>
+          {% for result in selected_results[i]['per_step_result'] %}
+            <td class="{{ result }}">{{ result|capitalize }}</td>
+          {% endfor %}
+        </tr>
+      </table>
+
+      <button class="btn" onclick="showChartPopup({{ i }})">Show Comparison Chart for p{{ i+1 }}</button>
+      <button class="btn" onclick="showMemoryMapPopup({{ i }})">Show Virtual→Physical Memory Map for p{{ i+1 }}</button>
+    {% endfor %}
+  </div>
+
+  <div id="rightPanel">
+    <h2>Algorithm Comparison Summary</h2>
     <table>
       <tr>
-        <th>Step</th>
-        {% for step_num in range(selected_results[i]['memory_state']|length) %}
-          <th>{{ step_num + 1 }}</th>
-        {% endfor %}
+        <th>Algorithm</th><th>Total Hits</th><th>Total Faults</th>
       </tr>
-      {% for frame_num in range(num_frames) %}
-      <tr>
-        <td>Frame {{ frame_num+1 }}</td>
-        {% for mem in selected_results[i]['memory_state'] %}
-          <td>{{ mem[frame_num] if mem|length > frame_num else '-' }}</td>
-        {% endfor %}
-      </tr>
+      {% for algo, results in simulation_results.items() %}
+        <tr {% if algo == recommended_algo %}class="highlight"{% endif %}>
+          <td>{{ algo }}</td>
+          <td>{{ results|sum(attribute='hits') }}</td>
+          <td>{{ results|sum(attribute='faults') }}</td>
+        </tr>
       {% endfor %}
-      <tr>
-        <td>Result</td>
-        {% for result in selected_results[i]['per_step_result'] %}
-          <td class="{{ result }}">{{ result|capitalize }}</td>
-        {% endfor %}
-      </tr>
     </table>
-
-    <button class="btn" onclick="showChartPopup({{ i }})">Show Comparison Chart for p{{ i+1 }}</button>
-    <button class="btn" onclick="showMemoryMapPopup({{ i }})">Show Virtual->Physical Memory Map for p{{ i+1 }}</button>
-  {% endfor %}
-</div>
-
-<div id="rightPanel">
-  <h2>Algorithm Comparison Summary</h2>
-  <table>
-    <tr>
-      <th>Algorithm</th><th>Total Hits</th><th>Total Faults</th>
-    </tr>
-    {% for algo, results in simulation_results.items() %}
-      <tr {% if algo == recommended_algo %}style="background-color:#2ecc71; color:white;"{% endif %}>
-        <td>{{ algo }}</td>
-        <td>{{ results|sum(attribute='hits') }}</td>
-        <td>{{ results|sum(attribute='faults') }}</td>
-      </tr>
-    {% endfor %}
-  </table>
-  <h3>Recommended Algorithm: <strong>{{ recommended_algo }}</strong></h3>
-</div>
+    <h3>Recommended Algorithm: <strong>{{ recommended_algo }}</strong></h3>
+  </div>
 
 </div>
 
@@ -131,23 +94,20 @@ const numFrames = {{ num_frames }};
 const numProcesses = {{ num_processes }};
 const referenceStrings = {{ reference_strings|tojson }};
 
-// Show Chart popup and render Chart.js with comparison data for selected process
 function showChartPopup(procIndex) {
   const chartPopup = document.getElementById('chartPopup');
   document.getElementById('chartProcNum').innerText = procIndex + 1;
   chartPopup.classList.add('active');
 
   const ctx = document.getElementById('comparisonChart').getContext('2d');
-
-  // Prepare data for each algorithm
-  const labels = referenceStrings[procIndex].map((v,i) => i+1);
+  const labels = referenceStrings[procIndex].map((_, i) => i + 1);
   const datasets = [];
 
   ['FIFO', 'LRU', 'OPTIMAL'].forEach(algo => {
-    const hitsFaults = allResults[algo][procIndex].per_step_result.map(r => r === 'hit' ? 1 : 0);
+    const hits = allResults[algo][procIndex].per_step_result.map(r => r === 'hit' ? 1 : 0);
     datasets.push({
-      label: algo + ' Hits (1=Hit,0=Fault)',
-      data: hitsFaults,
+      label: `${algo} Hits`,
+      data: hits,
       borderColor: algo === 'FIFO' ? 'blue' : (algo === 'LRU' ? 'green' : 'orange'),
       fill: false,
       tension: 0.1,
@@ -155,15 +115,11 @@ function showChartPopup(procIndex) {
     });
   });
 
-  // Destroy existing chart if any
-  if(window.currentChart) window.currentChart.destroy();
+  if (window.currentChart) window.currentChart.destroy();
 
   window.currentChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: labels,
-      datasets: datasets
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       scales: {
@@ -172,7 +128,7 @@ function showChartPopup(procIndex) {
           max: 1,
           ticks: {
             stepSize: 1,
-            callback: val => val === 1 ? 'Hit' : 'Fault'
+            callback: v => v === 1 ? 'Hit' : 'Fault'
           }
         }
       }
@@ -184,24 +140,21 @@ function closeChartPopup() {
   document.getElementById('chartPopup').classList.remove('active');
 }
 
-// Show Virtual to Physical Memory map popup
 function showMemoryMapPopup(procIndex) {
   const memMapPopup = document.getElementById('memoryMapPopup');
   document.getElementById('memMapProcNum').innerText = procIndex + 1;
 
-  // Generate mapping content
   const refStr = referenceStrings[procIndex];
-  const memStates = allResults['FIFO'][procIndex].memory_state; // Using FIFO mem state for example
-  let html = `<table border="1" cellpadding="5" cellspacing="0" style="width:100%; text-align:center;">
-    <tr><th>Step</th><th>Reference Page</th>`;
-  for(let f=1; f<=numFrames; f++) {
-    html += `<th>Frame ${f}</th>`;
-  }
+  const memStates = allResults['FIFO'][procIndex].memory_state;
+
+  let html = `<table><tr><th>Step</th><th>Reference</th>`;
+  for (let f = 1; f <= numFrames; f++) html += `<th>Frame ${f}</th>`;
   html += `</tr>`;
-  for(let i=0; i<refStr.length; i++){
-    html += `<tr><td>${i+1}</td><td>${refStr[i]}</td>`;
+
+  for (let i = 0; i < refStr.length; i++) {
+    html += `<tr><td>${i + 1}</td><td>${refStr[i]}</td>`;
     const frames = memStates[i] || [];
-    for(let f=0; f<numFrames; f++){
+    for (let f = 0; f < numFrames; f++) {
       html += `<td>${frames[f] !== undefined ? frames[f] : '-'}</td>`;
     }
     html += `</tr>`;
